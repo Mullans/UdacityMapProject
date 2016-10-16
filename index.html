@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Udacity Map Project!</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <link rel="stylesheet" href="styles/index.css">
+    </head>
+    <body>
+        <div class="content">
+            <div class="item-list" data-bind="css:{ 'open-list': showMenu }">
+                <div class="header list-header">
+                    <h2>Interesting Places</h2>
+                </div>
+                <div class="input">
+                    <input class="input-field" type="text" id="filter-input" data-bind="textInput: filter"/>
+                    <img class="input-icon" src="img/noun_filter_108225.png" alt="Filter Icon">
+                </div>
+                <div class="list-container">
+                    <ul data-bind="foreach: places" class="place-list">
+                        <li data-bind="text: name,  css:{ 'selected-item':isSelected }, click: toggleSelected"></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="main-content" data-bind="css:{ 'open-list': showMenu }">
+                <div class="header map-header">
+                    <img class="menu-icon" src="img/ic_menu_white_36px.svg" alt="Menu Icon"  data-bind="click: toggleMenu">
+                    <h2 class="map-title">Des Moines Restaurants</h2>
+                </div>
+                <div class="map-content">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script src="scripts/knockout-3.4.0.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB3eW4ri1bS773xKwnMSXy7SVdaWAd1zBc&callback=initMap" async defer></script>
+    <script src="scripts/index.js"></script>
+
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js"></script> -->
+
+</html>
