@@ -1,3 +1,5 @@
+// "use strict";
+
 var Place = function(data) {
     var self = this;
     this.infowindowContent = ko.observable('');
@@ -10,16 +12,16 @@ var Place = function(data) {
     //Function called if a place is selected either through the list or by the marker
     this.toggleSelected = function() {
         //Unselect all other places
+        infowindow.close();
         for (var i = 0; i < placeArray.length; i++) {
             if (placeArray[i].isSelected()) {
                 placeArray[i].isSelected(false);
-                placeArray[i].infowindow.close();
                 placeArray[i].marker.setAnimation(null);
             }
         }
         self.isSelected(true);
         if (self.infowindowContent() === '') {
-            self.infowindow.setContent('Content Loading...');
+            infowindow.setContent('Content Loading...');
             loadFourSquare(self);
         }
         //Center above the marker to get the info window
@@ -30,7 +32,7 @@ var Place = function(data) {
             lng: center.lng()
         };
         map.panTo(newCenter);
-        self.infowindow.open(map, self.marker);
+        infowindow.open(map, self.marker);
         self.marker.setAnimation(google.maps.Animation.BOUNCE);
     };
     this.markerClicked = function() {
@@ -107,7 +109,7 @@ var placeArray = [
 
 var map;
 var markers;
-
+var infowindow;
 function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
         center: {
@@ -127,11 +129,8 @@ function initMap() {
             title: place.name(),
             animation: google.maps.Animation.DROP
         });
-        var infowindow = new google.maps.InfoWindow({
-            content: ''
-        });
+
         place.marker = marker;
-        place.infowindow = infowindow;
         //Select place when marker clicked
         marker.addListener('click', function(where) {
             return function() {
@@ -139,11 +138,22 @@ function initMap() {
             };
         }(place));
         //Stop marker animation when info window closed
-        infowindow.addListener('closeclick', function(what) {
-            return function() {
-                what.setAnimation(null);
-            };
-        }(marker));
+    }
+    infowindow = new google.maps.InfoWindow({
+        content: ''
+    });
+    infowindow.addListener('closeclick', stopAnimations());
+    ko.applyBindings(new ViewModel());
+}
+function mapError(){
+   alert('Error: Failed to Load Google Map API.');
+   var map = document.getElementById('map');
+   map.innerHTML = "<div class='error-message'><h1>Error Loading Google Maps API<h1><p>Please verify your connection and reload the page.<p></div>";
+}
+
+function stopAnimations(){
+    for(var i = 0; i<placeArray.length;i++){
+        placeArray[i].marker.setAnimation(null);
     }
 }
 
@@ -155,11 +165,11 @@ var ViewModel = function() {
         self.showMenu(!self.showMenu());
     };
     self.startPlaces = ko.observableArray(placeArray);
-    self.filter = ko.observable("");
+    self.filter = ko.observable('');
     //The possibly filtered array of places to show on the map
     self.places = ko.computed(function() {
         var filteredArray;
-        if (self.filter() === "") {
+        if (self.filter() === '') {
             filteredArray = self.startPlaces();
         } else {
             filteredArray = ko.utils.arrayFilter(self.startPlaces(), function(place) {
@@ -171,7 +181,6 @@ var ViewModel = function() {
         return filteredArray;
     });
 };
-ko.applyBindings(new ViewModel());
 
 //Show/Hide markers on map
 function updatePlaces(filteredArray) {
@@ -180,9 +189,9 @@ function updatePlaces(filteredArray) {
         var place = placeArray[i];
         if (place.marker === undefined) continue;
         if (arrayContains(filteredArray, place)) {
-            place.marker.setMap(map);
+            place.marker.setVisible(true);
         } else {
-            place.marker.setMap(null);
+            place.marker.setVisible(false);
         }
     }
 }
@@ -198,7 +207,6 @@ function arrayContains(array, obj) {
 
 //Load data from Foursquare and set InfoWindow content accordingly
 function loadFourSquare(place) {
-    var infowindow = place.infowindow;
     // ko.getJSON
     var data = {
         cid: 'SZZDSRYDRM4FVQ05N1SWHPZHNYHCGSAMHXKSCQF40TKEUA4I',
@@ -206,11 +214,15 @@ function loadFourSquare(place) {
     };
     var url = 'https://api.foursquare.com/v2/venues/' + place.venueID() + '/?client_id=SZZDSRYDRM4FVQ05N1SWHPZHNYHCGSAMHXKSCQF40TKEUA4I&client_secret=IQOHK4K0WZPJR1BI3LQUFY5JT544QL5RVHBCGQ51DDC0W5XS%20&v=20130815';
     $.getJSON(url).done(function(data) {
-        venue = data.response.venue;
-        photoData = venue.photos.groups[0].items[0];
-        photoSrc = photoData.prefix + photoData.width + 'x' + photoData.height + photoData.suffix;
+        var venue = data.response.venue;
+        if(!venue.name)venue.name = "Venue Name Missing";
+        var photoData = venue.photos.groups[0].items[0];
+        var photoSrc;
+        if(!photoData){photoSrc = 'http://placekitten.com/300/300/';}
+        else{photoSrc = photoData.prefix + photoData.width + 'x' + photoData.height + photoData.suffix;}
+        if(!venue.url)venue.url = '';
         var templateString = '<div style="text-align:center;width:300px;"><h2>%%venue-name%%</h2><h3 >%%venue-description%%</h3><img style="height:200px;margin: 0 auto;border:solid black" src="%%venue-image%%" alt="Venue Photo"><br><a href="%%venue-url%%">%%venue-url%%</a></div>';
-        if (!venue.description) venue.description = '';
+        if (!venue.description) venue.description = 'No Description For Venue';
         var contentString = templateString.replace(/%%venue-url%%/g, venue.url).replace('%%venue-name%%', venue.name)
             .replace('%%venue-description%%', venue.description).replace('%%venue-image%%', photoSrc);
         infowindow.setContent(contentString);
