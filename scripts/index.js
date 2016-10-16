@@ -107,6 +107,7 @@ var placeArray = [
 
 var map;
 var markers;
+
 function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
         center: {
